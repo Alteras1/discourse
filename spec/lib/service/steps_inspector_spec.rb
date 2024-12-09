@@ -309,7 +309,7 @@ RSpec.describe Service::StepsInspector do
       end
 
       it "returns an error related to the exception" do
-        expect(error).to match(/BOOM \([^(]+RuntimeError[^)]+\)/)
+        expect(error).to match(/BOOM \([^(]*RuntimeError[^)]*\)/)
       end
     end
   end
