@@ -12,6 +12,8 @@ class Service::StepsInspector
     delegate :name, :result_key, to: :step
     delegate :failure?, :success?, :error, :raised_exception?, to: :step_result, allow_nil: true
 
+    alias error? failure?
+
     def self.for(step, result, nesting_level: 0)
       class_name =
         "#{module_parent_name}::#{step.class.name.split("::").last.sub(/^(\w+)Step$/, "\\1")}"
@@ -38,14 +40,14 @@ class Service::StepsInspector
     end
 
     def inspect
-      "#{"  " * nesting_level}[#{inspect_type}] #{name} #{emoji}#{runtime}".rstrip
+      "#{"  " * nesting_level}[#{inspect_type}] #{name}#{runtime} #{emoji}".rstrip
     end
 
     private
 
     def runtime
       return unless step_result&.__runtime__
-      " (took #{(step_result.__runtime__ * 1000).round(4)} ms)"
+      " (#{(step_result.__runtime__ * 1000).round(4)} ms)"
     end
 
     def step_result
@@ -64,7 +66,7 @@ class Service::StepsInspector
     end
 
     def unexpected_result_text
-      return "  <= expected to return true but got false instead" if failure?
+      return "  <= expected to return true but got false instead" if error?
       "  <= expected to return false but got true instead"
     end
   end
@@ -102,7 +104,7 @@ class Service::StepsInspector
     end
 
     def inspect
-      "#{"  " * nesting_level}[#{inspect_type}]#{runtime}"
+      "#{"  " * nesting_level}[#{inspect_type}]#{runtime}#{unexpected_result_emoji}"
     end
   end
 
@@ -112,8 +114,12 @@ class Service::StepsInspector
 
   # @!visibility private
   class Try < Transaction
+    def error?
+      step_result.exception
+    end
+
     def error
-      step_result.exception.inspect
+      step_result.exception.full_message
     end
   end
 
@@ -151,12 +157,12 @@ class Service::StepsInspector
       .join("\n")
       .then do |output|
         next output unless @encountered_error && (steps.size - @encountered_error).positive?
-        output + "\n\n[#{steps.size - @encountered_error} steps hidden as they were never reached]"
+        "#{output}\n\n(#{steps.size - @encountered_error} more steps not shown as the execution flow was stopped before reaching them)"
       end
   end
 
   # @return [String, nil] the first available error, if any.
   def error
-    steps.detect(&:error)&.error
+    steps.detect(&:error?)&.error
   end
 end

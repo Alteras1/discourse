@@ -46,7 +46,7 @@ RSpec.describe Service::StepsInspector do
   end
 
   describe "#execution_flow" do
-    subject(:output) { inspector.execution_flow.strip.gsub(%r{ \(took \d+\.\d+ ms\)}, "") }
+    subject(:output) { inspector.execution_flow.strip.gsub(%r{ \(\d+\.\d+ ms\)}, "") }
 
     context "when service runs without error" do
       it "outputs all the steps of the service" do
@@ -65,7 +65,7 @@ RSpec.describe Service::StepsInspector do
       end
 
       it "outputs time taken by each step" do
-        expect(inspector.execution_flow).to match(/took \d+\.\d+ ms/)
+        expect(inspector.execution_flow).to match(/\d+\.\d+ ms/)
       end
     end
 
@@ -82,14 +82,8 @@ RSpec.describe Service::StepsInspector do
         expect(output).to eq <<~OUTPUT.chomp
         [ 1/10] [options] default ✅
         [ 2/10] [model] model ❌
-        [ 3/10] [policy] policy
-        [ 4/10] [params] default
-        [ 5/10] [transaction]
-        [ 6/10]   [step] in_transaction_step_1
-        [ 7/10]   [step] in_transaction_step_2
-        [ 8/10] [try]
-        [ 9/10]   [step] might_raise
-        [10/10] [step] final_step
+
+        (8 more steps not shown as the execution flow was stopped before reaching them)
         OUTPUT
       end
     end
@@ -108,13 +102,8 @@ RSpec.describe Service::StepsInspector do
         [ 1/10] [options] default ✅
         [ 2/10] [model] model ✅
         [ 3/10] [policy] policy ❌
-        [ 4/10] [params] default
-        [ 5/10] [transaction]
-        [ 6/10]   [step] in_transaction_step_1
-        [ 7/10]   [step] in_transaction_step_2
-        [ 8/10] [try]
-        [ 9/10]   [step] might_raise
-        [10/10] [step] final_step
+
+        (7 more steps not shown as the execution flow was stopped before reaching them)
         OUTPUT
       end
     end
@@ -128,12 +117,8 @@ RSpec.describe Service::StepsInspector do
         [ 2/10] [model] model ✅
         [ 3/10] [policy] policy ✅
         [ 4/10] [params] default ❌
-        [ 5/10] [transaction]
-        [ 6/10]   [step] in_transaction_step_1
-        [ 7/10]   [step] in_transaction_step_2
-        [ 8/10] [try]
-        [ 9/10]   [step] might_raise
-        [10/10] [step] final_step
+
+        (6 more steps not shown as the execution flow was stopped before reaching them)
         OUTPUT
       end
     end
@@ -156,9 +141,8 @@ RSpec.describe Service::StepsInspector do
         [ 5/10] [transaction]
         [ 6/10]   [step] in_transaction_step_1 ✅
         [ 7/10]   [step] in_transaction_step_2 ❌
-        [ 8/10] [try]
-        [ 9/10]   [step] might_raise
-        [10/10] [step] final_step
+
+        (3 more steps not shown as the execution flow was stopped before reaching them)
         OUTPUT
       end
     end
@@ -183,7 +167,8 @@ RSpec.describe Service::StepsInspector do
         [ 7/10]   [step] in_transaction_step_2 ✅
         [ 8/10] [try]
         [ 9/10]   [step] might_raise 💥
-        [10/10] [step] final_step
+
+        (1 more steps not shown as the execution flow was stopped before reaching them)
         OUTPUT
       end
     end
@@ -223,13 +208,8 @@ RSpec.describe Service::StepsInspector do
           [ 1/10] [options] default ✅
           [ 2/10] [model] model ✅
           [ 3/10] [policy] policy ❌ ⚠️  <= expected to return true but got false instead
-          [ 4/10] [params] default
-          [ 5/10] [transaction]
-          [ 6/10]   [step] in_transaction_step_1
-          [ 7/10]   [step] in_transaction_step_2
-          [ 8/10] [try]
-          [ 9/10]   [step] might_raise
-          [10/10] [step] final_step
+
+          (7 more steps not shown as the execution flow was stopped before reaching them)
           OUTPUT
         end
       end
@@ -329,7 +309,7 @@ RSpec.describe Service::StepsInspector do
       end
 
       it "returns an error related to the exception" do
-        expect(error).to match(/RuntimeError: BOOM/)
+        expect(error).to match(/BOOM \([^(]+RuntimeError[^)]+\)/)
       end
     end
   end
@@ -338,19 +318,15 @@ RSpec.describe Service::StepsInspector do
     let(:parameter) { nil }
 
     it "outputs the service class name, the steps results and the specific error" do
-      expect(inspector.inspect.gsub(%r{ \(took \d+\.\d+ ms\)}, "")).to eq(<<~OUTPUT)
+      expect(inspector.inspect.gsub(%r{ \(\d+\.\d+ ms\)}, "")).to eq(<<~OUTPUT)
         Inspecting DummyService result object:
 
         [ 1/10] [options] default ✅
         [ 2/10] [model] model ✅
         [ 3/10] [policy] policy ✅
         [ 4/10] [params] default ❌
-        [ 5/10] [transaction]
-        [ 6/10]   [step] in_transaction_step_1
-        [ 7/10]   [step] in_transaction_step_2
-        [ 8/10] [try]
-        [ 9/10]   [step] might_raise
-        [10/10] [step] final_step
+
+        (6 more steps not shown as the execution flow was stopped before reaching them)
 
 
         Why it failed:
